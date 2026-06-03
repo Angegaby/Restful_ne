@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #0d4f4f;
+  --brand-light: #1a7a7a;
+  --brand-dark: #083838;
+  --accent: #e8a838;
+  --canvas: #f5f1eb;
+  --surface: #fffcf8;
+  --ink: #1c1917;
+  --muted: #78716c;
+  --border: #e7e0d6;
+  --chart-primary: #1a7a7a;
+  --stat-ok: #2d8a6f;
+  --stat-warn: #c9a227;
+  --stat-danger: #c45c4a;
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  input,
+  textarea,
+  select {
+    caret-color: var(--brand-light);
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    caret-color: var(--brand);
+  }
+}
+
+@layer components {
+  .page-title {
+    @apply text-2xl font-bold tracking-tight text-ink font-display;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-muted;
+  }
+
+  .table-head {
+    @apply border-b border-border pb-3 text-sm text-muted;
+  }
+
+  .table-row {
+    @apply border-b border-border/60;
+  }
+
+  .text-link {
+    @apply font-medium text-brand-light transition hover:text-brand hover:underline;
+  }
+
+  .surface-card {
+    @apply rounded-2xl border border-border bg-surface-elevated p-5 shadow-card transition hover:shadow-md;
+  }
+
+  .stat-value-ok {
+    @apply text-3xl font-bold text-stat-ok;
+  }
+
+  .stat-value-warn {
+    @apply text-3xl font-bold text-stat-warn;
+  }
+
+  .stat-value-danger {
+    @apply text-3xl font-bold text-stat-danger;
+  }
+
+  .stat-value-neutral {
+    @apply text-3xl font-bold text-ink;
+  }
+}

@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSPECTOR
+  USER
+}
+
+enum ExtinguisherType {
+  WATER
+  CO2
+  FOAM
+  DRY_CHEMICAL
+}
+
+enum ExtinguisherSize {
+  LB_1_5
+  LB_5
+  LB_9
+  LB_12
+}
+
+enum ExtinguisherStatus {
+  ACTIVE
+  EXPIRED
+  MAINTENANCE
+  DECOMMISSIONED
+}
+
+enum InspectionStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+model User {
+  id            String   @id @default(uuid())
+  firstName     String   @map("first_name")
+  lastName      String   @map("last_name")
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  role          UserRole @default(USER)
+  emailVerified Boolean  @default(false) @map("email_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  emailOtps           EmailOtp[]
+  scheduledInspections Inspection[]       @relation("ScheduledBy")
+  maintenanceLogs     MaintenanceLog[]
+  notifications       Notification[]
+  assignedExtinguishers FireExtinguisher[] @relation("AssignedInspector")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model EmailOtp {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  codeHash  String   @map("code_hash")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([codeHash])
+  @@map("email_otps")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@map("password_reset_tokens")
+}
+
+model FireExtinguisher {
+  id               String             @id @default(uuid())
+  serialNumber     String             @unique @map("serial_number")
+  location         String
+  type             ExtinguisherType
+  size             ExtinguisherSize
+  installationDate DateTime           @map("installation_date") @db.Date
+  expiryDate       DateTime           @map("expiry_date") @db.Date
+  status           ExtinguisherStatus @default(ACTIVE)
+  assignedInspectorId String?         @map("assigned_inspector_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  assignedInspector User?            @relation("AssignedInspector", fields: [assignedInspectorId], references: [id], onDelete: SetNull)
+  inspections     Inspection[]
+  maintenanceLogs MaintenanceLog[]
+
+  @@index([assignedInspectorId])
+  @@index([expiryDate])
+  @@index([installationDate])
+  @@index([status])
+  @@map("fire_extinguishers")
+}
+
+model Inspection {
+  id             String           @id @default(uuid())
+  extinguisherId String           @map("extinguisher_id")
+  scheduledById  String           @map("scheduled_by_id")
+  scheduledDate  DateTime         @map("scheduled_date") @db.Date
+  scheduledTime  String           @map("scheduled_time")
+  status         InspectionStatus @default(PENDING)
+  notes          String?
+  completedAt    DateTime?        @map("completed_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  extinguisher FireExtinguisher @relation(fields: [extinguisherId], references: [id], onDelete: Cascade)
+  scheduledBy  User             @relation("ScheduledBy", fields: [scheduledById], references: [id])
+
+  @@index([scheduledDate])
+  @@index([status])
+  @@index([extinguisherId])
+  @@map("inspections")
+}
+
+model MaintenanceLog {
+  id             String   @id @default(uuid())
+  extinguisherId String   @map("extinguisher_id")
+  inspectorId    String   @map("inspector_id")
+  actionTaken    String   @map("action_taken")
+  maintenanceDate DateTime @map("maintenance_date") @db.Date
+  issuesIdentified String @map("issues_identified")
+  notes          String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  extinguisher FireExtinguisher @relation(fields: [extinguisherId], references: [id], onDelete: Cascade)
+  inspector    User             @relation(fields: [inspectorId], references: [id])
+
+  @@index([maintenanceDate])
+  @@index([extinguisherId])
+  @@map("maintenance_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}
