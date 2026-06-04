@@ -31,6 +31,18 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function assignInspector(req: Request, res: Response, next: NextFunction) {
+  try {
+    const item = await service.assignInspector(
+      String(req.params.id),
+      req.body.assignedInspectorId
+    );
+    sendSuccess(res, item);
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function complete(req: Request, res: Response, next: NextFunction) {
   try {
     const item = await service.complete(

@@ -6,6 +6,7 @@ import { validate } from '../../middleware/validate';
 import {
   scheduleInspectionSchema,
   completeInspectionSchema,
+  assignInspectorSchema,
 } from '../../validators/inspection';
 import { uuidParamSchema } from '../../validators/common';
 
@@ -29,6 +30,13 @@ router.post(
   requireRole(UserRole.USER),
   validate(scheduleInspectionSchema),
   controller.schedule
+);
+router.patch(
+  '/:id/assign-inspector',
+  requireRole(UserRole.ADMIN),
+  validate(uuidParamSchema, 'params'),
+  validate(assignInspectorSchema),
+  controller.assignInspector
 );
 router.patch(
   '/:id/complete',

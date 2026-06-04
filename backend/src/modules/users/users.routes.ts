@@ -20,7 +20,6 @@ router.put('/me', validate(updateProfileSchema), controller.updateMe);
 router.put('/me/password', validate(changePasswordSchema), controller.changePassword);
 
 router.get('/inspectors', requireRole(UserRole.ADMIN), controller.listInspectors);
-router.get('/inspectors', requireRole(UserRole.ADMIN), controller.listInspectors);
 router.get('/', requireRole(UserRole.ADMIN), controller.list);
 router.post('/', requireRole(UserRole.ADMIN), validate(adminCreateUserSchema), controller.create);
 router.put(

@@ -15,3 +15,7 @@ export const completeInspectionSchema = z.object({
   status: z.literal(InspectionStatus.COMPLETED),
   notes: z.string().max(1000).optional(),
 });
+
+export const assignInspectorSchema = z.object({
+  assignedInspectorId: z.string().uuid('Invalid inspector ID'),
+});

@@ -71,7 +71,18 @@ app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'FEMS API is running' });
 });
 
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use(
+  '/api/docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      tryItOutEnabled: true,
+    },
+  })
+);
 app.get('/api/docs.json', (_req, res) => {
   res.json(swaggerSpec);
 });

@@ -5,6 +5,7 @@ import { validateTodayOrFuture } from '../../lib/dates';
 import { inspectionWhere } from '../../lib/scope';
 import * as notifications from '../notifications/notifications.service';
 import * as extinguishersService from '../extinguishers/extinguishers.service';
+import { assertInspectorId } from '../users/users.service';
 import { paginatedResult, skipTake } from '../../lib/pagination';
 
 function startOfToday() {
@@ -87,13 +88,18 @@ export async function schedule(
     },
   });
 
-  const msg = `Inspection requested for ${extinguisher.serialNumber} at ${extinguisher.location} on ${data.scheduledDate} at ${data.scheduledTime}`;
+  const scheduleSummary = `${extinguisher.serialNumber} at ${extinguisher.location} on ${data.scheduledDate} at ${data.scheduledTime}`;
+
+  await notifications.notifyPersonnel(
+    `New inspection request: ${scheduleSummary}. Assign an inspector from Inspections or Extinguishers.`,
+    [UserRole.ADMIN]
+  );
 
   if (extinguisher.assignedInspectorId) {
-    await notifications.notifyUser(extinguisher.assignedInspectorId, msg);
-    await notifications.notifyPersonnel(msg, [UserRole.ADMIN]);
-  } else {
-    await notifications.notifyPersonnel(msg);
+    await notifications.notifyUser(
+      extinguisher.assignedInspectorId,
+      `Inspection requested for ${scheduleSummary}.`
+    );
   }
 
   await notifications.notifyUser(
@@ -128,6 +134,56 @@ export async function list(
     }),
   ]);
   return paginatedResult(items.map(formatInspection), total, page, limit);
+}
+
+export async function assignInspector(inspectionId: string, assignedInspectorId: string) {
+  await syncOverdueStatuses();
+
+  const inspection = await prisma.inspection.findUnique({
+    where: { id: inspectionId },
+    include: {
+      extinguisher: {
+        select: { id: true, serialNumber: true, location: true, assignedInspectorId: true },
+      },
+      scheduledBy: { select: { id: true, firstName: true, lastName: true } },
+    },
+  });
+  if (!inspection) throw new NotFoundError('Inspection not found');
+
+  await assertInspectorId(assignedInspectorId);
+
+  const inspector = await prisma.user.findUnique({
+    where: { id: assignedInspectorId },
+    select: { firstName: true, lastName: true },
+  });
+  if (!inspector) throw new NotFoundError('Inspector not found');
+
+  await prisma.fireExtinguisher.update({
+    where: { id: inspection.extinguisherId },
+    data: { assignedInspectorId },
+  });
+
+  const dateStr = inspection.scheduledDate.toISOString().split('T')[0];
+  const assignMsg = `You have been assigned to ${inspection.extinguisher.serialNumber} at ${inspection.extinguisher.location}. Inspection on ${dateStr} at ${inspection.scheduledTime}.`;
+
+  await notifications.notifyUser(assignedInspectorId, assignMsg);
+
+  await notifications.notifyUser(
+    inspection.scheduledById,
+    `Inspector ${inspector.firstName} ${inspector.lastName} was assigned for your inspection on ${inspection.extinguisher.serialNumber} (${dateStr} ${inspection.scheduledTime}).`
+  );
+
+  const updated = await prisma.inspection.findUnique({
+    where: { id: inspectionId },
+    include: {
+      extinguisher: {
+        select: { serialNumber: true, location: true, assignedInspectorId: true },
+      },
+      scheduledBy: { select: { firstName: true, lastName: true, email: true } },
+    },
+  });
+
+  return formatInspection(updated!);
 }
 
 export async function complete(

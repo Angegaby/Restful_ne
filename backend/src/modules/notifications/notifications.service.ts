@@ -43,6 +43,12 @@ export async function listForUser(
   return paginatedResult(items, total, page, limit);
 }
 
+export async function unreadCount(userId: string) {
+  return prisma.notification.count({
+    where: { userId, read: false },
+  });
+}
+
 export async function markRead(id: string, userId: string) {
   const n = await prisma.notification.findFirst({
     where: { id, userId },

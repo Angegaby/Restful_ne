@@ -9,6 +9,7 @@ import { NotFoundError, ConflictError, ForbiddenError } from '../../lib/errors';
 import { extinguisherWhere } from '../../lib/scope';
 import { paginatedResult, skipTake } from '../../lib/pagination';
 import { assertInspectorId } from '../users/users.service';
+import * as notifications from '../notifications/notifications.service';
 
 const inspectorSelect = {
   select: { id: true, firstName: true, lastName: true, email: true },
@@ -157,6 +158,18 @@ export async function update(
     },
     include: includeInspector,
   });
+
+  if (
+    data.assignedInspectorId !== undefined &&
+    data.assignedInspectorId &&
+    data.assignedInspectorId !== existing.assignedInspectorId
+  ) {
+    await notifications.notifyUser(
+      data.assignedInspectorId,
+      `You have been assigned to ${item.serialNumber} at ${item.location}.`
+    );
+  }
+
   return formatExtinguisher(item);
 }
 

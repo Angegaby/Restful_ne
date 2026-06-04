@@ -14,6 +14,15 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function unreadCount(req: Request, res: Response, next: NextFunction) {
+  try {
+    const count = await service.unreadCount(req.user!.id);
+    sendSuccess(res, { count });
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function markRead(req: Request, res: Response, next: NextFunction) {
   try {
     const item = await service.markRead(String(req.params.id), req.user!.id);

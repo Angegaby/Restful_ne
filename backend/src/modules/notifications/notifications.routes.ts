@@ -8,6 +8,7 @@ const router = Router();
 
 router.use(authenticate);
 
+router.get('/unread-count', controller.unreadCount);
 router.get('/', controller.list);
 router.patch('/:id/read', validate(uuidParamSchema, 'params'), controller.markRead);
 
